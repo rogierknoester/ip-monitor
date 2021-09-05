@@ -10,39 +10,51 @@ class Monitor
 {
     public function __construct(private LoggerInterface $logger)
     {
-
     }
 
-    /**
-     * @throws \App\Domain\Exception\InvalidIpAddress
-     */
-    public function process(IpAddressFetcher $fetcher, DnsService $dnsService, MonitorConfig $config): void
+    public function process(IpAddressFetcher $fetcher, DnsService $dnsService, mixed $dnsConfig, string $checkingServiceDsn): void
     {
-
         // find out what our current IP address is
-        $currentIpAddress = $fetcher->fetch($config->checkingServiceDsn);
+        $currentIpAddress = $fetcher->fetch($checkingServiceDsn);
 
-        // check what the IP address in the DNS records is for the given domain
+        $this->logger->info('The current IP address of the server this application runs on is {address}', ['address' => (string) $currentIpAddress]);
+
+        $this->logger->info('Finding out what IP address is set in the DNS records');
+
+        // use the DNS service to see what the current registered IP address is
         try {
-            $ipAddressOfExternalHost = new IpAddress(gethostbyname($config->domain));
-        } catch (InvalidIpAddress) {
-            $ipAddressOfExternalHost = null;
-        }
+            $ipAddressOfExternalHost = $dnsService->getCurrentIpAddress($dnsConfig);
 
+            if(!$ipAddressOfExternalHost) {
+                throw new InvalidIpAddress();
+            }
+        } catch (InvalidIpAddress | Exception\DomainNameException) {
+            $this->logger->error('The IP address could not be found for the provided DNS config. Does the domain exist in the DNS service?');
 
-
-        if($currentIpAddress->sameAs($ipAddressOfExternalHost)) {
-            $this->logger->info('IP address of the application is the same as in the DNS records ({address})', ['address' => (string) $currentIpAddress]);
             return;
         }
 
-        $this->logger->info('IP of application is ({app_ip}) different from domain ({domain_ip})', ['app_ip' => $currentIpAddress, 'domain_ip' =>
-            $ipAddressOfExternalHost ?? '-']);
 
+        $this->logger->info('The IP address in the DNS records is {address}', ['address' => (string) $ipAddressOfExternalHost]);
 
-        $this->logger->info('Request DNS service to update DNS records');
-        $dnsService->update($currentIpAddress, $config);
+        if ($currentIpAddress->sameAs($ipAddressOfExternalHost)) {
+            $this->logger->info('The IP addresses are the same. No further action required.');
 
+            return;
+        }
+
+        $this->logger->info('The IP addresses are different. {current} & {expected}', [
+            'current'  => (string) $currentIpAddress,
+            'expected' =>
+                (string) $ipAddressOfExternalHost,
+        ]);
+        $this->logger->info('Requesting DNS service to update DNS records');
+
+        try {
+            $dnsService->update($currentIpAddress, $dnsConfig);
+        } catch (Exception\UpdateError $exception) {
+            $this->logger->error('Unable to update DNS', ['exception' => $exception]);
+        }
     }
 
 }

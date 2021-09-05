@@ -3,39 +3,34 @@
 namespace App\Application\Command;
 
 use App\Domain\DnsService;
-use App\Domain\Exception\InvalidIpAddress;
 use App\Domain\Exception\UnsupportedCheckingService;
 use App\Domain\Exception\UnsupportedDnsService;
 use App\Domain\IpAddressFetcher;
 use App\Domain\Monitor;
-use App\Domain\MonitorConfig;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Component\Validator\ConstraintViolationInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 #[AsCommand(
     name: 'monitor',
-    description: 'St',
+    description: 'Checks the IP address for a given domain at a given DNS service',
 )]
 class MonitorCommand extends Command
 {
 
     /**
      * @psalm-param iterable<IpAddressFetcher> $ipAddressFetchers
-     * @psalm-param iterable<DnsService>       $dnsServices
+     * @psalm-param iterable<DnsService> $dnsServices
      */
     public function __construct(
         private iterable $ipAddressFetchers,
         private iterable $dnsServices,
         private Monitor $monitor,
         private LoggerInterface $logger,
-        private ValidatorInterface $validator
     ) {
         parent::__construct();
     }
@@ -43,49 +38,36 @@ class MonitorCommand extends Command
     protected function configure(): void
     {
         $this
-            ->addArgument('domain', InputArgument::REQUIRED, 'The domain you\'re checking')
-            ->addArgument('checking-service-dsn', InputArgument::REQUIRED, 'A DSN for the service used to check the IP of this monitor',)
-            ->addArgument('dns-service', InputArgument::REQUIRED, 'One of the supported DNS services, e.g. DigitalOcean')
-            ->addArgument('token', InputArgument::REQUIRED, 'The token to use with the DNS service\'s API');
+            ->addArgument('checking-service-dsn', InputArgument::REQUIRED, 'A DSN for the service used to check the IP of this monitor')
+            ->addArgument('dns-service', InputArgument::REQUIRED, 'A DSN specifying the service used to update the IP of the DNS record');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        $io = new SymfonyStyle($input, $output);
-
-        $domain = $input->getArgument('domain');
+        /** @var string $checkingServiceDsn */
         $checkingServiceDsn = $input->getArgument('checking-service-dsn');
-        $dnsService = $input->getArgument('dns-service');
-        $token = $input->getArgument('token');
 
-        $config = new MonitorConfig($domain, $checkingServiceDsn, $token);
+        /** @var string $dnsDsn */
+        $dnsDsn = $input->getArgument('dns-service');
 
-        $violations = $this->validator->validate($config);
-        if ($violations->count() > 0) {
-
-            $io->error([
-                'The provided config is invalid.',
-                ...array_map(static fn(ConstraintViolationInterface $violation) => sprintf('%s: %s', $violation->getPropertyPath(), $violation->getMessage()),
-                    [...$violations]),
-            ]);
-
-            return Command::FAILURE;
-        }
-
+        // The service that will fetch us our current IP
+        // Especially necessary when behind NAT
         $ipAddressFetcher = $this->resolveIpAddressFetcher($checkingServiceDsn);
 
-        $dnsService = $this->resolveDnsService($dnsService);
+        // The service that will talk to the DNS service, e.g. DigitalOcean
+        $dnsService = $this->resolveDnsService($dnsDsn);
+        $dnsConfig = $dnsService->buildConfig($dnsDsn);
 
         try {
-            $this->monitor->process($ipAddressFetcher, $dnsService, $config);
-        } catch (InvalidIpAddress $e) {
+            $this->monitor->process($ipAddressFetcher, $dnsService, $dnsConfig, $checkingServiceDsn);
+
+            return Command::SUCCESS;
+
+        } catch (\Exception $e) {
             $this->logger->error($e->getMessage(), ['exception' => $e]);
 
             return Command::FAILURE;
         }
-
-
-        return Command::SUCCESS;
     }
 
     private function resolveIpAddressFetcher(string $checkingServiceDsn): IpAddressFetcher
@@ -99,14 +81,18 @@ class MonitorCommand extends Command
         throw new UnsupportedCheckingService(sprintf('The checking service "%s" is not supported', $checkingServiceDsn));
     }
 
-    private function resolveDnsService(string $type): DnsService
+    /**
+     * @template TDns
+     * @psalm-return DnsService<TDns>
+     */
+    private function resolveDnsService(string $dsn): DnsService
     {
         foreach ($this->dnsServices as $dnsService) {
-            if ($dnsService->supports($type)) {
+            if ($dnsService->supports($dsn)) {
                 return $dnsService;
             }
         }
 
-        throw new UnsupportedDnsService(sprintf('The DNS service "%s" is not supported', $type));
+        throw new UnsupportedDnsService(sprintf('The DSN "%s" is not supported', $dsn));
     }
 }

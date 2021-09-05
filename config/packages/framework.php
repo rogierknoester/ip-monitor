@@ -5,13 +5,12 @@ declare(strict_types=1);
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Config\FrameworkConfig;
 
-return static function (
-    FrameworkConfig $config,
-    ContainerConfigurator $containerConfigurator
-) {
+/**
+ * @psalm-suppress UndefinedClass
+ */
+return static function (FrameworkConfig $config, ContainerConfigurator $containerConfigurator) {
 
     $config
-        ->secret('%env(APP_SECRET)%')
         ->httpMethodOverride(false)
         ->session([
             'handler_id'         => null,

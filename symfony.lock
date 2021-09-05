@@ -1,6 +1,24 @@
 {
+    "amphp/amp": {
+        "version": "v2.6.0"
+    },
+    "amphp/byte-stream": {
+        "version": "v1.8.1"
+    },
     "clue/stream-filter": {
         "version": "v1.5.0"
+    },
+    "composer/package-versions-deprecated": {
+        "version": "1.11.99.3"
+    },
+    "composer/semver": {
+        "version": "3.2.5"
+    },
+    "composer/xdebug-handler": {
+        "version": "2.0.2"
+    },
+    "dnoegel/php-xdg-base-dir": {
+        "version": "v0.1.1"
     },
     "doctrine/annotations": {
         "version": "1.0",
@@ -20,6 +38,12 @@
     "doctrine/lexer": {
         "version": "1.2.1"
     },
+    "felixfbecker/advanced-json-rpc": {
+        "version": "v3.2.1"
+    },
+    "felixfbecker/language-server-protocol": {
+        "version": "1.5.1"
+    },
     "guzzlehttp/guzzle": {
         "version": "7.3.0"
     },
@@ -35,8 +59,17 @@
     "monolog/monolog": {
         "version": "2.3.2"
     },
+    "netresearch/jsonmapper": {
+        "version": "v4.0.0"
+    },
     "nikic/php-parser": {
         "version": "v4.12.0"
+    },
+    "nyholm/dsn": {
+        "version": "2.0.0"
+    },
+    "openlss/lib-array2xml": {
+        "version": "1.0.0"
     },
     "php-http/client-common": {
         "version": "2.4.0"
@@ -55,6 +88,15 @@
     },
     "php-http/promise": {
         "version": "1.1.0"
+    },
+    "phpdocumentor/reflection-common": {
+        "version": "2.2.0"
+    },
+    "phpdocumentor/reflection-docblock": {
+        "version": "5.2.2"
+    },
+    "phpdocumentor/type-resolver": {
+        "version": "1.4.0"
     },
     "psr/cache": {
         "version": "2.0.0"
@@ -79,6 +121,12 @@
     },
     "ralouphie/getallheaders": {
         "version": "3.0.3"
+    },
+    "roave/security-advisories": {
+        "version": "dev-latest"
+    },
+    "sebastian/diff": {
+        "version": "4.0.4"
     },
     "symfony/cache": {
         "version": "v5.3.7"
@@ -216,6 +264,9 @@
     "symfony/polyfill-php81": {
         "version": "v1.23.0"
     },
+    "symfony/process": {
+        "version": "v5.3.7"
+    },
     "symfony/routing": {
         "version": "5.3",
         "recipe": {
@@ -265,5 +316,14 @@
     },
     "toin0u/digitalocean-v2": {
         "version": "4.3.0"
+    },
+    "vimeo/psalm": {
+        "version": "4.10.0"
+    },
+    "webmozart/assert": {
+        "version": "1.10.0"
+    },
+    "webmozart/path-util": {
+        "version": "2.3.0"
     }
 }

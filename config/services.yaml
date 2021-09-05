@@ -11,6 +11,9 @@ services:
         autowire: true      # Automatically injects dependencies in your services.
         autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
 
+        bind:
+            Psr\Log\LoggerInterface $dnsLogger: '@monolog.logger.dns_service'
+
     _instanceof:
         App\Domain\IpAddressFetcher:
             tags: ['app.ip_address_fetcher']

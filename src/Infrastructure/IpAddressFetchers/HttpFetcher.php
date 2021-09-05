@@ -25,7 +25,7 @@ class HttpFetcher implements IpAddressFetcher
      */
     public function fetch(string $checkingService): IpAddress
     {
-        $this->logger->debug('Checking with service: {{service}}', ['service' => $checkingService]);
+        $this->logger->debug('Checking with service: {service}', ['service' => $checkingService]);
         $response = $this->ipAddressFetcherClient->request('GET', $checkingService)->getContent(true);
         return new IpAddress($response);
     }
